@@ -1,0 +1,6 @@
+out_1;out_2;out_3;out_4;out_5;out_6;out_7
+NaN;NaN;0.151;14.91;0.312;12.42;NaN
+NaN;NaN;0.065;10.01;0.118;8.19;NaN
+NaN;NaN;0.047;13;NaN;NaN;NaN
+NaN;NaN;0.049;13.2;NaN;NaN;NaN
+NaN;NaN;0.095;14.96;0.161;12.39;NaN

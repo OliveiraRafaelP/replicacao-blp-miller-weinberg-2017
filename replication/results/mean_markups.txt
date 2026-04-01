@@ -1,0 +1,6 @@
+Var1_1;Var1_2;Var1_3;Var1_4;Var1_5;Var1_6
+NaN;NaN;5.33;6.2;5.05;5.93
+NaN;NaN;3.92;5.66;3.86;5.59
+NaN;NaN;3.09;2.71;NaN;NaN
+NaN;NaN;3.15;2.86;NaN;NaN
+NaN;NaN;4.81;6.07;4.5;5.85

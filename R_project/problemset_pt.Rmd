@@ -1,0 +1,629 @@
+---
+title: "Lista de Exercícios 1: Replicação BLP"
+subtitle: "Mercado de Cervejas -- Miller & Weinberg (2017)"
+author: "Rafael Oliveira"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_depth: 3
+    toc_float: true
+    number_sections: true
+    code_folding: hide
+    theme: flatly
+    encoding: UTF-8
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = TRUE, warning = FALSE, message = FALSE,
+  fig.width = 10, fig.height = 5, dpi = 150
+)
+
+# Carregar resultados finais (todas as etapas pre-computadas)
+load("C:/Users/rafael.oliveira/Desktop/Problem Set/R_project/data/step05_output.RData")
+
+# Variaveis derivadas nao salvas no RData
+dp <- p_post - df$price
+dp_pct <- dp / df$price * 100
+dcs_pct <- dcs / cs_pre_vec * 100
+
+library(tidyverse)
+library(ivreg)
+library(sandwich)
+library(lmtest)
+library(knitr)
+library(kableExtra)
+```
+
+> **Nota métodologica.** A implementação empirica deste exercício foi realizada inteiramente em R, a partir do *replication package* original em Matlab disponibilizado por Miller & Weinberg (2017). A amostra utilizada é uma versao reduzida é perturbada do conjunto de dados original do IRI: contem 5 das 37 regiões, 8 dos 39 produtos, é os preços é quantidades foram aleatoriamente modificados pelos autores para fins de replicação. Consequentemente, os coeficientes estimados não devem reproduzir exatamente as tabelas publicadas. O objetivo é replicar a *métodologia* --- a pipeline completa de estimação BLP é simulação de fusão --- é não os valores numericos exatos.
+
+# Contexto Teórico e Pergunta de Política
+
+## Resuma em 4 frases o contexto empírico do paper Miller & Weinberg (2017):
+
+### O que é a joint venture MillerCoors (2008)?
+
+A MillerCoors é uma joint venture formada em junho de 2008 por meio da combinação das operações nos EUA da SABMiller PLC (dona das marcas Miller) e da Molson Coors Brewing (dona das marcas Coors). Tais empresas eram, respectivamente, a segunda e a terceira maiores cervejeiras americanas. 
+
+A operação foi submetida a revisão antitruste pelo DOJ, sendo aprovada sob o argumento de que as reduções de custo esperadas (sobretudo em distribuição, já que a Coors passou a ter acesso às breweries da Miller, mais próximas de várias regiões) provavelmente superariam quaisquer efeitos anticompetitivos. O HHI nacional passou de ~1.853 (2007) para ~2.350 (2009), cruzando o limiar de mercado "altamente concentrado" das Merger Guidelines dos EUA.
+
+
+### Quais dados IRI scanner?
+
+Os dados são provenientes da IRI Academic Database (Bronnenberg, Kruger e Mela, 2008) e consistem em registros semanais de receita e vendas por código UPC e loja para uma amostra de supermercados americanos. 
+
+O artigo trabalha com 39 regiões geográficas, 13 marcas de cerveja (Bud Light, Budweiser, Michelob, Michelob Light, Miller Lite, Miller Genuine Draft, Miller High Life, Coors Light, Coors, Corona Extra, Corona Light, Heineken e Heineken Light), 4 tamanhos de embalagem (sixpacks, 12-packs e 24/30-packs combinados), cobrindo o período 2001–2011. Os dados são agregados de semana-loja para região-mês (167.695 observações) ou região-trimestre (31.784 observações) no nível produto × região × período.
+
+
+### Δpreços observados pós-fusão?
+
+Imediatamente após a consumação da joint venture (em junho de 2008), os preços reais (deflacionados pelo CPI, em dólares de 2010) de Bud Light, Miller Lite e Coors Light sobem cerca de 8% e permanecem nesse patamar mais alto até o fim da amostra em 2011, com tendência de crescimento adicional
+
+As regressões de diferença-em-diferenças (Tabela II) estimam aumentos absolutos de 5–7% para MillerCoors e ABI nas especificações centrais (com todas as marcas e embalagens), com os preços de Corona Extra e Heineken não exibindo nenhuma elevação persistente, o que os qualificaria como grupo de controle adequado. 
+
+A análise contrafactual estrutural, ao final do artigo, indica que 6–8% (comparação do equilíbrio de Nash-Bertrand com o cenário sem coordenação, mas com efeitos unilaterais e ganhos de eficiência) desses preços são atribuíveis à coordenação pós-fusão, com os efeitos unilaterais e as eficiências de custo se compensando mutuamente.
+
+### Hipótese principal (coordenação vs. unilateral)?
+
+A hipótese principal é que os aumentos de preço pós-fusão, em especial os da ABI, que não é parte da joint venture e portanto não deveria ser afetada por efeitos unilaterais diretos, não podem ser explicados apenas pelo modelo-padrão de efeitos unilaterais com Nash-Bertrand antes e depois da fusão, e são mais bem explicados por efeitos coordenados: a fusão teria alterado o conceito de equilíbrio do oligopólio, permitindo que ABI e MillerCoors passassem a internalizar parcialmente (~26% no ponto estimado central) a externalidade de precificação entre si, isto é, a reconhecer que aumentar seus próprios preços beneficia também o rival, e vice-versa. 
+
+De fato, o teste empírico rejeita Nash-Bertrand pós-fusão (κ = 0) de forma robusta, enquanto o modelo de coordenação produz custos implícitos plausíveis para a ABI e explica a assimetria entre domésticas e importadas.
+
+## Explique verbalmente por que random coefficients logit (BLP) é superior a logit multinomial simples para cervejas diferenciadas. Cite 1 elasticidade própria/cruzada esperada da Tabela 3 do paper.
+
+O modelo Logit Multinomial Simples modela a utilidade do consumidor i para um produto j com base nas características observáveis do produto j, seu preço e um termo aleatório (i.i.d Gumbel). Neste modelo, todos os consumidores têm as mesmas preferências (mesmo parâmetro beta para o efeito das características; mesmo parâmetro alfa para o efeito-preço).
+
+O problema deste modelo para o caso de mercados de produtos diferenciados é que a substituição entre produtos é considerada como sendo proporcional e simétrica. Isto é, se entra uma nova cerveja importada no mercado doméstico americano (Corona ou Heineken), essa cerveja “rouba” a demanda de todas as outras proporcionalmente ao seu market-share. Isso é pouco realista.
+
+O modelo de Steven Berry, James Levinsohn e Ariel Pakes (1995), o BLP, por outro lado, passa a ter beta e alfa variando entre os consumidores i. Cada consumidor possui preferências distintas (uns preferem as domésticas, outros importadas, outros artesanais, outros preferem baixo preço, etc). 
+
+Com isso, as elasticidades-preço passam a ser mais flexíveis, dependendo da proximidade entre os produtos. No caso do Logit Multinomial Simples, as elasticidadessão restritas e as cruzadas só dependem dos market-shares de cada produto j.
+
+Nota-se na Tabela 3 que os aumentos nos preços da MillerCoors (joint-venture) e ABI são maiores nas regiões com maior deltaHHI (onde houve maior concentração de mercado) e menores nas regiões onde se verifica redução nos custos de transporte com a fusão. As estimativas são distintas para as cervejas importadas.
+
+## A análise é de política antitruste (DOJ/FTC). Qual é a justificativa para revisar uma decisão que já foi tomada? Quais métricas de bem-estar são computadas (consumer surplus, total surplus)? Descreva 1 contrafactual testado no paper.
+
+Há pelo menos três razões para realizar a revisão de uma decisão que já foi tomada. Primeiro, porque o DOJ/FTC tomou a decisão com base em simulações sobre o que poderia acontecer com os preços no futuro. Com um volume maior de dados e quase dez anos depois da operação, os autores têm condições de realizar uma análise ex-post detalhada e verificar se as premissas e projeções da autoridade antitruste se concretizaram.
+
+Segundo, o artigo comenta que documentos internos da ABI (então, líder de mercado), divulgados em litígio antitruste posterior à operação sob análise, descreveu o "Conduct Plan" da empresa com objetivos de obter o maior nível de followership de concorrentes no curto prazo e "melhorar a conduta dos competidores no longo prazo". Ou seja, após a fusão teve-se notícia de um plano de conduta da ABI com uma linguagem sugestiva de coordenação. Trata-se de uma motivação adicional para avaliar se pode ter ocorrido uma prática coordenada após a criação da joint venture MillerCoors.
+
+Terceiro, conforme destacam os autores, a literatura empírica quase sempre assume Nash-Bertrand antes e depois da fusão, capturando apenas o canal de efeitos unilaterais pós-fusão. No entanto, as próprias Merger Guidelines do DOJ/FTC reconhecem que o canal de coordenação é muito relevante, uma vez que cerca de 60% das ações antitruste de 1990–2014 o alegam. Desse modo, investigar se o mercado de cervejas pós-fusão reflete efeitos coordenados, para além de unilaterais, é relevante.
+
+Sobre as métricas de bem-estar, são computadas três métricas: superávit do produtor, do consumidor e o superávit total (saldo entre ambos). Os autores destacam que, em razão do aumento do superávit total, a operação da fusão seria justificada sob esse critério de bem-estar. No entanto, o bem-estar do consumidor costuma ser mais relevante, e este caiu 3,7%.
+
+Os autores recomputam o equilíbrio sob quatro cenários contrafactuais, mantendo fixos os parâmetros estimados:
+
+1)	Sem fusão: Miller e Coors competem separadamente, sem κ, sem eficiências.
+2)	Efeitos unilaterais + eficiências (sem coordenação): Miller e Coors se fundem e reduzem custos, mas κ = 0.
+3)	Efeitos unilaterais sem eficiências (sem coordenação): fusão sem reduções de custo, κ = 0.
+4)	Coordenação sem eficiências: κ estimado, sem reduções de custo.
+
+# Carregamento e Limpeza dos Dados
+
+Esta seção documenta a construção da amostra de estimação a partir do *replication package* em Matlab. Os arquivos brutos são carregados, os identificadores de produto e mercado são decodificados, e as participações de mercado (*market shares*) são calculadas com um bem externo (*outside good*) explícito.
+
+**Nota sobre os dados de replicação.** Os dados utilizados neste exercício são uma versao reduzida e perturbada dos dados originais de *scanner* do IRI empregados por Miller & Weinberg (2017). A amostra de replicação contém 5 das 37 regiões originais e 8 dos 39 produtos. Preços e quantidades foram aleatoriamente perturbados, e os volumes da ABI é Miller Lite foram inflados por um fator de 1,5 (`smalldata.m`, linhas 31--38). Em consequência, os coeficientes estimados e as elasticidades não vão reproduzir os valores das tabelas publicadas. O objetivo deste exercício é replicar a *metodologia* --- isto é, o pipeline completo de estimação de demanda BLP e simulação de fusão --- e não reproduzir valores numéricos exatos.
+
+## Carregamento dos arquivos Matlab
+
+O *replication package* fornece três arquivos de dados brutos. Os dados de *scanner* (`small_scanner.mat`) consistem em uma matriz $1120 \times 9$ que codifica identificadores de produto, preços, quantidades e caracteristicas de mercado. As demografias (`small_demosE.mat`) contém 500 sorteios simulados de renda por combinação ano-cidade. Os parâmetros de demanda pré-estimados (`small_dresgmm2.mat`) fornecem os coeficientes RCNL da publicação original na Econometrica.
+
+```{r data-summary}
+tibble(
+  Dimensao = c("Observacoes (bruto)", "Apos exclusao do periodo de transicao",
+               "Apos filtro de ano fiscal", "Mercados (cdid)",
+               "Produtos por mercado (J)", "Firmas", "Cidades",
+               "Anos fiscais", "Consumidores simulados (ns)"),
+  Valor = c("1.120", "960", "640", "80", "8",
+            "5 (1=ABI, 2=Corona, 3=Heineken, 4=Coors, 5=MillerCoors)",
+            "5", "2006, 2007, 2010, 2011", "500")
+) %>% kable(caption = "Dimensoes da amostra de estimacao") %>%
+  kable_styling(full_width = FALSE)
+```
+
+O identificador composto na coluna 1 codifica seis campos: `firmid*1e10 + brndid*1e8 + sizeid*1e6 + cityid*1e4 + yearid*1e2 + montid`. Os 8 produtos são: Bud Light (12pk, 24pk), Coors Light (12pk, 24pk), Corona (12pk), Heineken (12pk), Miller Lite (12pk, 24pk). O ano fiscal na especificação RCNL2 inicia no Q4 (outubro): `fiscid = yearid + 1*(montid >= 4) + 2004`. A amostra exclui aproximadamente um ano em torno da data da fusão (julho de 2008) para evitar observações do período de transição.
+
+## Shares e limpeza
+
+As participações de mercado são calculadas como *shares* brutas de quantidade --- *não* normalizadas para somar a unidade. O resíduo é absorvido pela participação do bem externo (*outside good*).
+
+```{r shares-summary}
+tibble(
+  Variavel = c("share (s_jt)", "inside share", "outside share", "logodds"),
+  Formula = c("q_jt / msize", "sum(s_jt) por mercado", "1 - inshr", "ln(s_j) - ln(s_0)"),
+  Media = c(mean(df$share), mean(df$inshr), mean(df$outshr), mean(df$logodds)),
+  Min = c(min(df$share), min(df$inshr), min(df$outshr), min(df$logodds)),
+  Max = c(max(df$share), max(df$inshr), max(df$outshr), max(df$logodds))
+) %>% mutate(across(Media:Max, ~round(.x, 4))) %>%
+  kable(caption = "Construcao dos shares: s_jt = q_jt / msize (bruto, nao normalizado)") %>%
+  kable_styling(full_width = FALSE)
+```
+
+Nao há zeros nem valores extremos nesta amostra (intervalo de *shares*: [0,004; 0,120]). Todas as participações são estritamente positivas e bem abaixo da unidade, de modo que a transformação log-odds $\ln(s_{jt}) - \ln(s_{0t})$ está bem definida sem necessidade de *trimming*.
+
+```{r shares-plot, fig.cap="Figura 1. Participacoes de mercado vs. precos por firma e tamanho de embalagem. A relacao negativa dentro de cada categoria de tamanho e consistente com demanda decrescente. ABI (Bud Light) domina ambos os segmentos; importados se concentram em precos altos com baixas participacoes."}
+df %>%
+  mutate(firm_label = factor(firmid, levels = 1:5,
+    labels = c("ABI", "Corona", "Heineken", "Coors", "MillerCoors")),
+    size_label = ifelse(sizeid == 2, "12-pack", "24/30-pack")) %>%
+  ggplot(aes(x = price, y = share, color = firm_label)) +
+  geom_point(alpha = 0.5) +
+  facet_wrap(~size_label) +
+  labs(x = "Preco ($/144oz)", y = "Market share", color = "Firma") +
+  theme_minimal()
+```
+
+## Instrumentos
+
+A identificação do coeficiente de preço requer instrumentos que desloquem a oferta sem entrar diretamente na utilidade do consumidor. O conjunto baseline de instrumentos consiste em cinco variaveis excluídas (do segundo estágio), classificadas como *cost shifters* e instrumentos de estrutura de mercado no estilo BLP.
+
+```{r instruments}
+tibble(
+  ID = c("Z1", "Z2", "Z4", "Z7", "Z8"),
+  Variavel = c("dist", "coalpost", "sum_dist", "sumdist_abi", "sumdist_mc"),
+  Tipo = c("Cost-side", "Cost-side", "BLP-style", "Interacao BLP", "Interacao BLP"),
+  Justificativa = c(
+    "Milhas ate a cervejaria x indice diesel. Desloca o custo marginal via transporte; excluido da demanda.",
+    "1(ABI ou MC, pos-fusao). Mudanca na estrutura competitiva desloca markups de equilibrio.",
+    "Soma de dist para todos os produtos do mercado. Captura variacao na estrutura de custos dos rivais.",
+    "sum_dist x indicador ABI. Permite efeitos diferenciais de estrutura de mercado para a ABI.",
+    "sum_dist x indicador MC. Permite efeitos diferenciais para produtos Miller/Coors."
+  )
+) %>% kable(caption = "Conjunto baseline de instrumentos: 5 instrumentos excluídos para 2 variáveis endógenas") %>%
+  kable_styling(full_width = FALSE)
+```
+
+Três instrumentos adicionais da especificação original do artigo (Z3: número de produtos no mercado; Z5--Z6: interações com *dummies* de firma) são degenerados nesta amostra porque $J = 8$ em todos os mercados --- consequência do dataset reduzido. 
+
+Vale destacar que, ao contrário do artigo, quatro instrumentos baseados em renda (Z9--Z12: renda média interagida com caracteristicas do produto) foram avaliados em análise de sensibilidade, mas rejeitados: produzem coeficientes de preço com sinal incorreto e falham nos testes de sobreidentificação, consistente com a perturbação dos dados distorcendo a correlação renda-demanda da qual esses instrumentos dependem. 
+
+O conjunto baseline de cinco instrumentos gera *first stages* fortes para ambas as variáveis endógenas ($F > 15$).
+
+# Estimação da Demanda
+
+Esta seção apresenta os resultados da estimação de demanda. Primeiro, foi estimado um nested logit simplificado por 2SLS para demonstrar a estratégia de identificação e avaliar a performance dos instrumentos. Em seguida, foram carregados os parâmetros RCNL completos do artigo --- estimados sobre o dataset completo e não perturbado --- que servem de base para a análise do lado da oferta.
+
+## 2SLS linear
+
+A equação de demanda do nested logit é:
+
+$$\ln(s_{jt}) - \ln(s_{0t}) = \alpha \, p_{jt} + \sigma \ln(s_{j|g,t}) + \mathbf{x}_j' \boldsymbol{\beta} + \xi_{jt}$$
+
+onde $p_{jt}$ é $\ln(s_{j|g,t})$ são endógenos, instrumentados pelas cinco variáveis excluídas descritas acima. Efeitos fixos de produto e de período absorvem $\mathbf{x}_j' \boldsymbol{\beta}$.
+
+```{r 2sls-estimation}
+# Spec B: Logit simples com IV
+fit_B <- ivreg(logodds ~ price + factor(prodid) + factor(dateid) |
+                 factor(prodid) + factor(dateid) +
+                 dist + coalpost + sum_dist + sumdist_abi + sumdist_mc, data = df)
+vcov_B <- vcovCL(fit_B, cluster = df$cityid)
+
+# Spec D: Nested logit com IV (baseline)
+fit_D <- ivreg(logodds ~ price + logcondshr + factor(prodid) + factor(dateid) |
+                 factor(prodid) + factor(dateid) +
+                 dist + coalpost + sum_dist + sumdist_abi + sumdist_mc, data = df)
+vcov_D <- vcovCL(fit_D, cluster = df$cityid)
+
+# OLS como benchmark
+fit_ols <- lm(logodds ~ price + logcondshr + factor(prodid) + factor(dateid), data = df)
+vcov_ols <- vcovCL(fit_ols, cluster = df$cityid)
+
+tibble(
+  ` ` = c("alpha (preco)", "  (ep)", "sigma (nesting)", "  (ep)",
+          "F first-stage (preco)", "N"),
+  `OLS` = c(sprintf("%.4f", coef(fit_ols)["price"]),
+            sprintf("(%.4f)", sqrt(diag(vcov_ols))["price"]),
+            sprintf("%.4f", coef(fit_ols)["logcondshr"]),
+            sprintf("(%.4f)", sqrt(diag(vcov_ols))["logcondshr"]),
+            "---", "640"),
+  `Spec B (logit IV)` = c(sprintf("%.4f", coef(fit_B)["price"]),
+                           sprintf("(%.4f)", sqrt(diag(vcov_B))["price"]),
+                           "---", "", "15,7", "640"),
+  `Spec D (NL IV)` = c(sprintf("%.4f", coef(fit_D)["price"]),
+                        sprintf("(%.4f)", sqrt(diag(vcov_D))["price"]),
+                        sprintf("%.4f", coef(fit_D)["logcondshr"]),
+                        sprintf("(%.4f)", sqrt(diag(vcov_D))["logcondshr"]),
+                        "15,7", "640"),
+  `Artigo (RCNL)` = c(sprintf("%.4f", alpha), "---",
+                       sprintf("%.4f", rho), "---", "---", "94.656")
+) %>% kable(caption = "Estimacao de demanda: OLS, 2SLS e RCNL do artigo") %>%
+  kable_styling(full_width = FALSE)
+```
+
+O coeficiente de preço é negativo em ambas as especificações IV, consistente com a teoria de demanda. 
+
+A estimativa OLS apresenta viés positivo (sinal incorreto), confirmando a endogeneidade dos preços. Já a especificação nested logit (Spec D) produz $\hat{\alpha} = -0{,}027$ e $\hat{\sigma} = 0{,}94$, ambos com sinais corretos; o parâmetro de *nesting* situa-se no intervalo $[0, 1)$, satisfazendo a restrição teórica. As estatísticas $F$ do *first stage* superam o limiar de Staiger-Stock de 10, indicando força adequada dos instrumentos.
+
+As estimativas 2SLS são atenuadas em relacão ao RCNL do artigo ($\alpha = -0{,}109$, $\rho = 0{,}778$), como esperado dada a especificação mais simples, a amostra menor e a perturbação dos dados. Os padrões qualitativos --- coeficiente de preço negativo, alta correlação intra-*nest*, *first stages* fortes --- confirmam que a estratégia de identificação é válida.
+
+## RCNL: Parâmetros e Elasticidades
+
+Para toda a analise subsequente do lado da oferta, foram utilizados os parâmetros RCNL estimados por Miller & Weinberg (2017) sobre o dataset completo do IRI (37 regiões, 39 produtos, 94.656 observações):
+
+- $\alpha = -0{,}1087$ (coeficiente médio de preço)
+- $\rho = 0{,}7779$ (parametro de *nesting*)
+- $\theta_2 = [0{,}0009;\; 0{,}0125;\; 0{,}0045]$ (interações de renda com preço, constante é calorias)
+
+Esses parâmetros são carregados de `small_dresgmm2.mat` e tomados como dados, seguindo a estrutura do próprio *replication package*, o qual não reestima a demanda.
+
+```{r elasticities}
+# Selecionar 80 mercados filtrados por ano fiscal dentre os 140 brutos
+library(R.matlab)
+mat_reload <- readMat("C:/Users/rafael.oliveira/Desktop/Problem Set/replication/data/raw/small_scanner.mat")
+id2_all <- mat_reload$small.scanner[, 1]
+fid_all <- floor(id2_all / 1e10)
+yid_all <- floor((id2_all - fid_all*1e10 - floor((id2_all - fid_all*1e10)/1e8)*1e8 -
+  floor((id2_all - fid_all*1e10 - floor((id2_all - fid_all*1e10)/1e8)*1e8)/1e6)*1e6 -
+  floor((id2_all - fid_all*1e10 - floor((id2_all - fid_all*1e10)/1e8)*1e8 -
+  floor((id2_all - fid_all*1e10 - floor((id2_all - fid_all*1e10)/1e8)*1e8)/1e6)*1e6)/1e4)*1e4) / 1e2)
+mid_all <- round(id2_all - fid_all*1e10 - floor((id2_all - fid_all*1e10)/1e8)*1e8 -
+  floor((id2_all - fid_all*1e10 - floor((id2_all - fid_all*1e10)/1e8)*1e8)/1e6)*1e6 -
+  floor((id2_all - fid_all*1e10 - floor((id2_all - fid_all*1e10)/1e8)*1e8 -
+  floor((id2_all - fid_all*1e10 - floor((id2_all - fid_all*1e10)/1e8)*1e8)/1e6)*1e6)/1e4)*1e4 - yid_all*1e2)
+obsintemp_all <- (yid_all<=3|yid_all>=6)|(yid_all==4&mid_all<=2)|(yid_all==5&mid_all>=3)
+fiscid_all <- yid_all + as.integer(mid_all>=4) + 2004L
+obsin_all <- obsintemp_all & (fiscid_all %in% c(2006,2007,2010,2011))
+mkt_sel <- tapply(obsin_all, rep(1:140, each=8), all)
+elasMat_80 <- elasMat[,,mkt_sel]
+
+own_elas <- sapply(1:80, function(m) diag(elasMat_80[,,m]))
+
+prod_labs <- c("Bud Light 12pk", "Bud Light 24pk", "Coors Light 12pk", "Coors Light 24pk",
+               "Corona 12pk", "Heineken 12pk", "Miller Lite 12pk", "Miller Lite 24pk")
+
+tibble(
+  Produto = prod_labs,
+  Media = rowMeans(own_elas),
+  Min = apply(own_elas, 1, min),
+  Max = apply(own_elas, 1, max)
+) %>% mutate(across(Media:Max, ~round(.x, 2))) %>%
+  kable(caption = "Elasticidades-preco proprias por produto (RCNL, 80 mercados filtrados)") %>%
+  kable_styling(full_width = FALSE)
+```
+
+A elasticidade-preço própria média é de **`r round(mean(own_elas), 2)`**, consistente com as estimativas do artigo de aproximadamente $-4$ a $-5$. Dois padrões merecem destaque:
+
+Primeiro, produtos de 12 unidades são mais elásticos que os de 24 unidades da mesma marca (e.g., Bud Light 12pk: $-5{,}05$ vs. 24pk: $-4{,}24$), refletindo maior pressão competitiva no segmento de embalagens menores. 
+
+Segundo, o RCNL gera uma hierarquia de elasticidades cruzadas ausente no logit multinomial simples: substituição *intra*-marca supera substituição entre marcas, que por sua vez supera substituição entre domésticos e importados. Essa estrutura diferenciada é essencial para uma simulação de fusão realista.
+
+## Markups e Custos Marginais
+
+Os custos marginais são recuperados pela inversão das condições de primeira ordem (FOC) de Bertrand-Nash sob o sistema de demanda RCNL. Para cada mercado, o markup do produto $j$ é:
+
+$$\text{markup}_j = \left[ -(\mathbf{\Omega} \circ \frac{\partial \mathbf{s}}{\partial \mathbf{p}}')^{-1} \mathbf{s} \right]_j$$
+
+onde $\mathbf{\Omega}$ é a matriz de propriedade. O custo marginal implícito é $mc_j = p_j - \text{markup}_j$.
+
+```{r markups-table}
+df %>%
+  mutate(markup = markup_R, mc = mc_R, lerner = markup_R / price,
+         firm_label = factor(firmid, levels = 1:5,
+           labels = c("ABI", "Corona", "Heineken", "Coors", "MillerCoors"))) %>%
+  group_by(firm_label) %>%
+  summarise(Preco = mean(price), Markup = mean(markup),
+            CM = mean(mc), Lerner = mean(lerner), .groups = "drop") %>%
+  mutate(across(Preco:Lerner, ~round(.x, 3))) %>%
+  kable(caption = "Markups de Bertrand e custos marginais implicitos por firma (parametros RCNL)") %>%
+  kable_styling(full_width = FALSE)
+```
+
+A ABI apresenta o maior markup absoluto (US\$4,33) e o maior índice de Lerner (32,0%), consistente com sua posição dominante entre as marcas domésticas e seu portfolio multi-produto. Os importados apresentam índices de Lerner mais baixos (22--23%) apesar de preços de varejo mais elevados, refletindo custos marginais substancialmente maiores decorrentes de transporte e tributos de importação. 
+
+Todos os custos marginais implícitos são estritamente positivos, indicando ausência de patologia associada a uma especificação incorreta. As estimativas apresentam correlação de 0,98 com os resultados do Matlab (`sres_bertrand.mat`); a diferença residual (média $|\Delta mc| =$ US\$0,32) decorre de diferenças entre a inversão direta da FOC realizada no R e o procedimento de três etapas coalizão/franja do código Matlab.
+
+# Simulação de Fusão
+
+Esta seção apresenta o contrafactual de fusão sob competição de Bertrand. A simulação quantifica os efeitos unilaterais de preço da *joint venture* MillerCoors, resolvendo o equilíbrio de Nash sob a estrutura de propriedade pós-fusão, mantendo fixos os parâmetros de demanda e os custos marginais.
+
+**Escopo e limitações.** A simulação assume competição estática de Bertrand-Nash. Miller & Weinberg (2017), no entanto, apresentam evidências de que a conduta pós-fusão é melhor caracterizada por liderança de preços, na qual a ABI fixa um *supermarkup* que toda a coalizão segue. 
+
+O contrafactual de Bertrand representa, portanto, um *limite inferior* dos efeitos competitivos da fusão --- captura a internalização de externalidades de precificação entre os produtos das partes fusionadas (efeitos unilaterais da fusão), mas não contempla a potencial facilitação de coordenação. 
+
+A diferença entre a previsão de que o mercado opera a la Bertrand e os dados observados (destacados no artigo como evidência de que um regime de liderança de preços pela ABI seria mais aderente à realidade) é precisamente o que o artigo atribui à coordenação tácita.
+
+## Dataset pós-fusão
+
+A mudanca de propriedade pós-fusão atribui à Coors Light (marca 4, anteriormente pertencente à Coors como firma 4) a MillerCoors (firma 5), criando uma firma de quatro produtos que internaliza externalidades de precificação entre Coors Light é Miller Lite em ambos os tamanhos de embalagem.
+
+```{r ownership}
+# Pré-fusao (mercado 1)
+m1 <- 1:8
+owner_pre <- outer(df$firmid[m1], df$firmid[m1], "==") * 1L
+owner_post <- outer(firmid_post[m1], firmid_post[m1], "==") * 1L
+
+cat("Pares de produtos co-propriedade (pre-fusao):", sum(owner_pre[upper.tri(owner_pre)]), "de 28\n")
+cat("Pares de produtos co-propriedade (pos-fusao):", sum(owner_post[upper.tri(owner_post)]), "de 28\n")
+```
+
+O número de pares de produtos co-propriedade aumenta de 3 para 7. Antes da fusão, um aumento de preço na Coors Light 12pk desvia parte da demanda para Miller Lite 12pk --- um ganho capturado por uma rival. 
+
+Apos a fusão, esse desvio permanece dentro da firma, reduzindo o custo competitivo do aumento de preço. Ou seja, esta é a eficiência gerada pela fusão.
+
+## Equilíbrio de Bertrand pós-fusão
+
+O equilíbrio de Bertrand-Nash pós-fusão é computado para cada um dos 80 mercados, resolvendo o sistema de condições de primeira ordem:
+
+$$p_j^* = mc_j + \text{markup}_j(\mathbf{p}^*; \, \mathbf{\Omega}^{\text{pos}})$$
+
+O sistema não linear é resolvido com `nleqslv` (método de Broyden, tolerâncias de função e de passo de $10^{-12}$), com os preços observados pré-fusão como valores iniciais. Todos os 80 mercados convergem.
+
+```{r merger-results}
+merging <- df$firmid %in% c(4, 5)
+rival_abi <- df$firmid == 1
+rival_import <- df$firmid %in% c(2, 3)
+
+tibble(
+  Grupo = c("Partes fusionadas (Coors + MC)", "Rival: ABI", "Rivais: importados", "Geral"),
+  `dp medio ($)` = c(mean(dp[merging]), mean(dp[rival_abi]),
+                      mean(dp[rival_import]), mean(dp)),
+  `dp medio (%)` = c(mean(dp_pct[merging]), mean(dp_pct[rival_abi]),
+                      mean(dp_pct[rival_import]), mean(dp_pct))
+) %>% mutate(across(-Grupo, ~round(.x, 3))) %>%
+  kable(caption = "Contrafactual de Bertrand: variacao media de precos por grupo") %>%
+  kable_styling(full_width = FALSE)
+```
+
+## Resultados por produto e bem-estar
+
+```{r product-results}
+df %>%
+  mutate(label = case_when(
+    brndid==1 & sizeid==2 ~ "Bud Light 12pk", brndid==1 & sizeid==3 ~ "Bud Light 24pk",
+    brndid==4 & sizeid==2 ~ "Coors Light 12pk", brndid==4 & sizeid==3 ~ "Coors Light 24pk",
+    brndid==5 & sizeid==2 ~ "Corona 12pk", brndid==7 & sizeid==2 ~ "Heineken 12pk",
+    brndid==13 & sizeid==2 ~ "Miller Lite 12pk", brndid==13 & sizeid==3 ~ "Miller Lite 24pk")) %>%
+  group_by(label) %>%
+  summarise(dp_dollar = mean(p_post - price), dp_pct = mean((p_post - price)/price*100),
+            .groups = "drop") %>%
+  mutate(across(-label, ~round(.x, 3))) %>%
+  arrange(desc(abs(dp_dollar))) %>%
+  kable(col.names = c("Produto", "dp medio ($)", "dp medio (%)"),
+        caption = "Contrafactual de Bertrand: variacao de precos por produto") %>%
+  kable_styling(full_width = FALSE)
+```
+
+**Resposta dos rivais.** A ABI eleva preços modestamente (+0,5%), consistente com a propriedade de complementaridade estratégica da competição de Bertrand em produtos diferenciados: quando a entidade fusionada eleva preços, a ABI enfrenta menor pressão competitiva e otimamente ajusta seus preços para cima. Os importados são essencialmente não afetados ($-0{,}1$%), refletindo a fraca substituibilidade entre cervejas domésticas e importadas.
+
+**Excedente do consumidor.** A variação média do excedente do consumidor é $\Delta CS = `r round(mean(dcs), 4)`$ (`r round(mean(dcs_pct), 2)`%). Os consumidores são prejudicados pela fusão por meio de preços de equilíbrio mais altos, embora o efeito sobre o bem-estar seja modesto em termos absolutos, pois as partes fusionadas respondem por aproximadamente 20% da participação do *inside good*.
+
+**Implicações para política antitruste.** Sob o modelo de Bertrand, a razão entre o aumento de preço da ABI e o das partes fusionadas é de aproximadamente 0,33. Nos dados observados, contudo, essa razão é proxima de 1,0 --- os preços da ABI subiram quase tanto quanto os da Miller/Coors após a *joint venture*. 
+
+Novamente, essa discrepância entre a previsão de Bertrand e o padrao de preços observado é que constitui a evidência central para a hipótese de coordenação.
+
+**Lideranca de preços vs. Bertrand.** Miller & Weinberg (2017) argumentam que um modelo de lideranca de preços fornece uma descrição estrutural mais adequada da conduta pós-fusão por três razões: 
+
+(i) os aumentos de preço observados da ABI são grandes demais para serem explicados apenas por efeitos unilaterais; 
+
+(ii) os movimentos de preço quase simétricos entre ABI e MillerCoors são consistentes com uma coalizão que segue um *supermarkup* comum definido por um líder de preços; e 
+
+(iii) o modelo estrutural de oferta com restrições de compatibilidade de incentivos (ICCs) produz estimativas de custo marginal econômicamente sensíveis ao fator de desconto $\delta \approx 0{,}26$, enquanto o Bertrand puro ($\delta = 0$) gera coeficientes de regressão de custos com sinais incorretos.
+
+# Bônus: Eficiência Marginal de 5%
+
+Esta seção discute qualitativamente as implicações de uma redução de 5% nos custos marginais da entidade fusionada, conforme solicitado no enunciado.
+
+Nesse cenário, a simulação procede de forma identica à seção anterior, mas com $mc_j^{\text{eff}} = 0{,}95 \times mc_j$ para todos os produtos da MillerCoors. A eficiência reduz o incentivo da firma fusionada a elevar preços, compensando parcialmente o efeito unilateral. 
+
+A aprovação da fusão sob um critério de bem-estar do consumidor depende do sinal do impacto liquido $\Delta CS_{\text{fusão}} + \Delta CS_{\text{eficiência}}$.
+
+Dado que o aumento de preço de Bertrand para as partes fusionadas é modesto (+1,9%, aproximadamente US\$0,20), uma redução de 5% nos custos marginais --- equivalente a aproximadamente US\$0,40--0,55 por unidade dependendo do produto --- provavelmente compensaria a maior parte ou a totalidade do efeito unilateral de preço. Contudo, essa defesa de eficiências aborda apenas o componente de Bertrand. Se a fusão também facilita coordenação (como argumenta o artigo), os ganhos de eficiência necessários para restaurar o bem-estar do consumidor seriam substancialmente maiores, dado que o modelo PLE prevê aumentos de preço várias vezes superiores ao *baseline* de Bertrand.
+
+# Discussão
+
+## Tabelas replicadas
+
+Este exercício replica os componentes centrais do pipeline empirica de MW (2017): construção dos dados a partir do *replication package* em Matlab, estimação de demanda via nested logit 2SLS, recuperação de custos marginais por inversão das condições de primeira ordem utilizando os parametros RCNL do artigo, e simulação de fusão sob Bertrand com calculo de bem-estar. 
+
+Os padrões de elasticidade (média própria $\approx -4{,}7$, elasticidades cruzadas diferenciadas) e as estimativas de markup (índice de Lerner $\approx 29\%$) são consistentes com os resultados do artigo. A simulação de fusão produz aumentos de preço na direção correta (+1,9% para as partes fusionadas, +0,5% para a ABI) e um declinio modesto do excedente do consumidor ($-0{,}9\%$).
+
+## Desafios associados à base de dados
+
+O principal desafio é que os dados de replicação são intencionalmente perturbados e reduzidos em escopo. Isso tem três consequências concretas para o exercício de replicação: 
+
+(i) 3 dos 12 instrumentos de demanda do artigo são degenerados na amostra pequena ($J = 8$ em todos os mercados); 
+
+(ii) instrumentos baseados em renda produzem identificação a partir de artefatos da perturbação e não de heterogeneidade genuína de demanda, produzindo estimativas com sinal incorreto. Ou seja, os resultados com um total de 9 instrumentos aparenta ser adequado em termos da razoabilidade dos instrumentos, mas a variação captada não possui intuição econômica. Em razão disso, optou-se na replicação por excluir da estimação em 2SLS esses instrumentos associados à renda após análise de sensibilidade; e 
+
+(iii) o teste de Sargan rejeita a válidade dos instrumentos em especificações sobreidentificadas, resultado atribuível à perturbação e não a uma falha fundamental de identificação. O modelo RCNL completo com coeficientes aleatórios não pode ser estimado de forma crível com apenas cinco cidades de variação de renda. Por essas razões, a análise do lado da oferta se apoia nos parâmetros RCNL pré-estimados do artigo, e não nas estimativas 2SLS.
+
+## Lições de Organização Industrial
+
+Este exercício demonstra o *toolkit* padrão de IO estrutural para análise de fusoes: 
+
+(1) estimação de demanda com instrumentos para endogeneidade de preços (além de resolver a endogeneidade dos shares condicionais); 
+
+(2) recuperação de custos marginais pelo lado da oferta, explorando as condições de primeira ordem de um jogo de precificação multi-produto; 
+
+(3) simulação contrafactual sob estruturas alternativas de propriedade. A principal contribuicao de Miller & Weinberg (2017) é mostrar que a simulação padrão de fusão sob Bertrand *subestima* os efeitos observados sobre preços da *joint venture* MillerCoors. A diferença entre a previsão de Bertrand e os dados é atribuida à coordenação tácita de preços, quantificada por meio de um modelo de Equilíbrio de Lideranca de Preços (PLE) com restrições de compatibilidade de incentivos. 
+
+Essa conclusão tem implicações diretas para a política antitruste: análises de fusão devem avaliar não apenas os efeitos unilaterais da consolidação de propriedade (conforme usualmente se observa na literatura), mas também o potencial da operação para facilitar conduta coordenada entre os concorrentes remanescentes (conforme evidências documentais em parcela relevante de casos julgados pelas autoridades antitruste).
+
+# Apêndice: Códigos Principais
+
+Este apendice apresenta os trechos centrais do codigo R utilizado na replicação. Os scripts completos estão na pasta `scripts/` do projeto. Aqui são reproduzidos apenas os passos-chave de cada etapa do pipeline.
+
+## Carregamento e preparação dos dados
+
+Carregamento do arquivo `.mat` do Matlab e decodificacao do identificador composto, que empacota firma, marca, tamanho, cidade, ano e mes em um único número de 11 digitos.
+
+```{r appendix-load, eval=FALSE}
+# Carregar dados brutos do scanner (1120 obs x 9 variaveis)
+mat_scanner <- R.matlab::readMat(file.path(path$data_raw, "small_scanner.mat"))
+scanner     <- mat_scanner$small.scanner
+
+# Decodificar ID composto: firmid*1e10 + brndid*1e8 + sizeid*1e6 + ...
+id2    <- scanner[, 1]
+firmid <- floor(id2 / 1e10)
+brndid <- floor((id2 - firmid * 1e10) / 1e8)
+sizeid <- floor((id2 - firmid * 1e10 - brndid * 1e8) / 1e6)
+cityid <- floor((id2 - firmid * 1e10 - brndid * 1e8 - sizeid * 1e6) / 1e4)
+yearid <- floor((id2 - firmid * 1e10 - brndid * 1e8 - sizeid * 1e6 - cityid * 1e4) / 1e2)
+montid <- round(id2 - firmid*1e10 - brndid*1e8 - sizeid*1e6 - cityid*1e4 - yearid*1e2)
+```
+
+Aplicação dos filtros temporais: exclusão do período ao redor da fusão e seleção dos anos fiscais de interesse.
+
+```{r appendix-filter, eval=FALSE}
+# Filtro 1: excluir observacoes proximas a fusao (jul/2008)
+obsintemp <- (yearid <= 3L | yearid >= 6L) |
+             (yearid == 4L & montid <= 2L) |
+             (yearid == 5L & montid >= 3L)
+
+# Filtro 2: ano fiscal (RCNL2: Q4 = outubro inicia novo ano)
+fiscid <- yearid + as.integer(montid >= 4L) + 2004L
+obsin  <- obsintemp & (fiscid %in% c(2006L, 2007L, 2010L, 2011L))
+# Resultado: 1120 -> 960 -> 640 observacoes
+```
+
+## Construção das variaveis e instrumentos
+
+Cálculo dos *market shares* brutos e da variável dependente do modelo BLP (log-odds ratio em relação ao bem externo).
+
+```{r appendix-shares, eval=FALSE}
+# Market share: quantidade / tamanho do mercado potencial
+df$share <- df$quantity / df$msize
+
+# Inside share: soma dos shares dentro de cada mercado
+df <- df %>%
+  group_by(cdid) %>%
+  mutate(inshr = sum(share)) %>%
+  ungroup()
+
+# Outside share e variavel dependente BLP
+df$outshr  <- 1.0 - df$inshr
+df$logodds <- log(df$share) - log(df$outshr)  # ln(s_j) - ln(s_0)
+
+# Share condicional dentro do ninho (para nested logit)
+df$logcondshr <- log(df$share) - log(df$inshr)  # ln(s_j / sum_k s_k)
+```
+
+Construção dos cinco instrumentos excluídos do conjunto baseline.
+
+```{r appendix-instruments, eval=FALSE}
+# Z1: distancia a cervejaria x indice diesel (cost shifter)
+# [ja disponivel como df$dist]
+
+# Z2: indicador coalizao pos-fusao (mudanca de estrutura competitiva)
+df$coalpost <- as.integer((df$firmid %in% c(1L, 5L)) & (df$yearid >= 5L))
+
+# Z4: soma das distancias de todos os produtos no mercado (BLP-style)
+df <- df %>% group_by(cdid) %>% mutate(sum_dist = sum(dist)) %>% ungroup()
+
+# Z7-Z8: interacoes da soma de distancias com indicadores de firma
+df$sumdist_abi <- df$sum_dist * as.integer(df$firmid == 1L)
+df$sumdist_mc  <- df$sum_dist * as.integer(df$firmid %in% c(4L, 5L))
+```
+
+## Estimacao da demanda
+
+Estimação do nested logit por 2SLS com erros-padrão clusterizados por cidade. Efeitos fixos de produto absorvem a utilidade média de cada marca $\times$ tamanho; efeitos fixos de período absorvem choques temporais comuns.
+
+```{r appendix-2sls, eval=FALSE}
+# Nested logit 2SLS (especificacao baseline — Spec D)
+# Endogenas: price, logcondshr
+# Instrumentos excluidos: dist, coalpost, sum_dist, sumdist_abi, sumdist_mc
+fit_D <- ivreg(
+  logodds ~ price + logcondshr + factor(prodid) + factor(dateid) |
+            factor(prodid) + factor(dateid) +
+            dist + coalpost + sum_dist + sumdist_abi + sumdist_mc,
+  data = df
+)
+
+# Erros-padrao clusterizados por cidade (5 clusters)
+vcov_D <- vcovCL(fit_D, cluster = df$cityid)
+```
+
+Carregamento dos parâmetros RCNL pré-estimados pelo artigo original, usados como base para a análise do lado da oferta.
+
+```{r appendix-rcnl, eval=FALSE}
+# Parametros RCNL de Miller & Weinberg (2017, Econometrica)
+mat_dres <- R.matlab::readMat(file.path(path$data_raw, "small_dresgmm2.mat"))
+
+alpha   <- mat_dres$theta1.2[1, 1]     # Coef. medio de preco: -0.1087
+rho     <- mat_dres$rho.2[1, 1]        # Parametro de nesting: 0.7779
+theta2  <- mat_dres$theta2.2[, 1]      # Coefs. aleatorios (interacoes com renda)
+derMat  <- mat_dres$derMat.2           # Derivadas ds/dp (8 x 8 x 140 mercados)
+elasMat <- mat_dres$elasMat.2          # Elasticidades (8 x 8 x 140 mercados)
+
+# Matriz de interacoes renda x caracteristicas (theta2w)
+theta2w <- matrix(0, nrow = 3, ncol = 2)
+theta2w[1, 2] <- theta2[1]  # preco x renda
+theta2w[2, 2] <- theta2[2]  # constante x renda
+theta2w[3, 2] <- theta2[3]  # calorias x renda
+```
+
+## Elasticidades e markups
+
+Cálculo das elasticidades-preço próprias a partir das matrizes pré-computadas do RCNL, e recuperação dos custos marginais por inversão da CPO de Bertrand-Nash.
+
+```{r appendix-elasticities, eval=FALSE}
+# Elasticidades proprias: diagonal da matriz 8x8 em cada mercado
+own_elas <- sapply(1:80, function(m) diag(elasMat_80[, , m]))
+# own_elas: matriz 8 x 80 (produtos x mercados)
+# Media geral: ~-4.65
+
+# Inversao da CPO de Bertrand para recuperar markups e custos marginais
+# Para cada mercado m:
+owner_m <- outer(firm_m, firm_m, "==") * 1.0  # Matriz de propriedade
+omega   <- owner_m * t(der1)                   # Omega .* (ds/dp)'
+markup  <- -solve(omega, svec)                 # markup = -(Omega .* der')^{-1} * s
+mc      <- p_m - markup                        # Custo marginal implicito
+```
+
+A função `eval_foc` encapsula o cálculo completo: dado um vetor de preços, recomputa shares e derivadas via simulação RCNL (500 consumidores) e retorna o residuo da CPO.
+
+```{r appendix-foc, eval=FALSE}
+# Avaliacao completa da CPO em precos candidatos
+eval_foc <- function(p, alpha_val, rho_val, deltanp_m, mc_m, owner,
+                     x2_m_template, pcoefi_m, dfull_m, theta2w_val, ns_val) {
+  # 1. Utilidade media nos precos candidatos
+  delta2 <- deltanp_m + alpha_val * p
+  # 2. Heterogeneidade do consumidor (mu = x2 * theta2w * renda)
+  mu_res <- compute_mu(theta2w_val, ns_val, dfull_m, x2_m)
+  # 3. Shares individuais via RCNL
+  sh_res <- compute_indsh(exp(delta2), exp(mu_res$mu), rho_val)
+  svec   <- rowMeans(sh_res$sharei)
+  # 4. Derivadas ds/dp
+  der1   <- compute_der1(pcoefi_full, sh_res$sharei, sh_res$scondi, sh_res$sgroupi, rho_val)
+  # 5. Markup e residuo da CPO
+  markup <- -solve(owner * t(der1), svec)
+  return(p - mc_m - markup)  # = 0 no equilibrio
+}
+```
+
+## Simulação de fusão
+
+Construção da matriz de propriedade pós-fusão (Coors absorvida pela MillerCoors) e resolucao do novo equilíbrio de Bertrand via *solver* não linear.
+
+```{r appendix-merger, eval=FALSE}
+# Alterar propriedade: firma 4 (Coors) -> firma 5 (MillerCoors)
+firmid_post <- df$firmid
+firmid_post[firmid_post == 4] <- 5
+
+# Para cada mercado: resolver CPO pos-fusao
+for (m in 1:80) {
+  idx <- ((m - 1) * 8 + 1):(m * 8)
+
+  # Nova matriz de propriedade (Coors Light agora co-propriedade com Miller Lite)
+  owner_post <- outer(firmid_post[idx], firmid_post[idx], "==") * 1.0
+
+  # Resolver sistema nao linear: encontrar p* tal que CPO(p*) = 0
+  sol <- nleqslv(
+    x  = df$price[idx],           # Valor inicial = precos pre-fusao
+    fn = foc_residual,            # Sistema: p - mc - markup(p) = 0
+    mc_m = mc_base[idx],          # Custos marginais fixos (pre-fusao)
+    owner = owner_post,           # Propriedade pos-fusao
+    # ... demais parametros de demanda (alpha, rho, deltanp, theta2w, etc.)
+    method = "Broyden",
+    control = list(xtol = 1e-12, ftol = 1e-12, maxit = 500)
+  )
+
+  p_post[idx] <- sol$x            # Precos de equilibrio pos-fusao
+}
+
+# Resultados: variacao de precos e excedente do consumidor
+dp     <- p_post - df$price       # Delta preco por produto
+dp_pct <- dp / df$price * 100     # Delta preco percentual
+```

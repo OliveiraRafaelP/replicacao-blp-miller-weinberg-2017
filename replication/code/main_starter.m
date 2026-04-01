@@ -1,0 +1,224 @@
+clear 
+clear var -global
+rand('seed',292014);
+
+% Adding mtimesx to path
+addpath '\Users\nhm27\Dropbox\Brewer Collusion 2\replication\code\MTIMESX'
+savepath
+
+% Paths used in replication
+path.code1 = 'C:\Users\nhm27\Dropbox\Brewer Collusion 2\replication\code\functions';
+path.code2 = 'C:\Users\nhm27\Dropbox\Brewer Collusion 2\replication\code\idcheck';
+path.data1 ='C:\Users\nhm27\Dropbox\Brewer Collusion 2\replication\data\raw';
+path.data2 ='C:\Users\nhm27\Dropbox\Brewer Collusion 2\replication\data\analysis';
+path.figr = 'C:\Users\nhm27\Dropbox\Brewer Collusion 2\replication\results';
+
+% Starting point    
+cd(path.code1);
+
+%mex contrMap_rcnl.c -R2018a
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Augmenting our saved demand data
+%  - This only has to run once, and that has been done
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+spec = main_spec(1);
+spec.includeallobs=1;
+spec.dfolder='RCNL2';
+f_daugment(path,spec)
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Impute marginal costs and supermarkups---UNCONSTRAINED
+%   - covers non-binding ICC
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% 2-m case (Appendix D)
+dfx = 90;
+df = dfx/100;
+spec = main_spec(df);
+
+main_supply_nonbind(path,spec);
+
+% 1-m case (Baseline Model)
+dfx = 90;
+df = dfx/100;
+spec = main_spec(df);
+spec.bysize = 0;
+
+main_supply_nonbind(path,spec);
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Impute marginal costs 
+%   - covers Nash-Bertrand
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+dfx = 0.0;
+df = dfx/10;
+spec = main_spec(df);
+spec.bysize = 0;
+
+impute_bertrand(path,spec);
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Impute marginal costs and supermarkups
+%   - binding ICC
+%   - region-specific supermarkup with **pooled** ICCs
+%   - single supermarkup
+%   - considers discount factors 0.1, 0.2, ..., 0.9
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+dfxin = [20 25 26 30 35 40];
+
+for dfx = dfxin
+ 
+    % Specification, folders, etc., given discount factor
+    df = dfx/100;
+    spec = main_spec(df);
+    spec.bysize = 0;
+    
+    
+    main_supply_bind(path,spec,2006);
+    main_supply_bind(path,spec,2007);
+    main_supply_bind(path,spec,2010);
+    main_supply_bind(path,spec,2011);
+    
+end    
+
+% Combining the fiscal years
+dfxin = [20 25 26 30 35 40];
+pool=1;
+xarg=0;
+
+combine_imputed(path,dfxin,pool,xarg)
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Impute marginal costs and supermarkups (Appendix D, Table G2)
+%   - binding ICC
+%   - region-specific supermarkup with **non-pooled** ICCs
+%   - single supermarkup
+%   - considers discount factors 0.1, 0.2, ..., 0.9
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+dfxin = [25 27 30];
+
+for dfx = dfxin
+ 
+    % Specification, folders, etc., given discount factor
+    df = dfx/100;
+    spec = main_spec(df);
+    spec.bysize = 0;
+    
+    main_supply_bind_nopool(path,spec)
+    
+end    
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Impute marginal costs and supermarkups (Appendix D, Table G1)
+%   - binding ICC
+%   - region-specific supermarkup with **pooled** ICCs
+%   - two supermarkups: 6/12 packs and 24 packs
+%   - considers discount factors 0.1, 0.2, ..., 0.9
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+dfxin = [25 26 30];
+
+for dfx = dfxin
+ 
+    % Specification, folders, etc., given discount factor
+    df = dfx/100;
+    spec = main_spec(df);
+    
+    main_supply_bind_x(path,spec,2006);
+    main_supply_bind_x(path,spec,2007);
+    main_supply_bind_x(path,spec,2010);
+    main_supply_bind_x(path,spec,2011);
+    
+end    
+
+% Combining the fiscal years
+dfxin = [25 26 30];
+pool=1;
+xarg=1;
+combine_imputed(path,dfxin,pool,xarg)
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Creates a number of exhibits:
+%   - Cost regressions and mean supermarkups by timing and model
+%   - Scatterplots used in model comparison
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+results_costregs(path)
+    
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Creates a number of exhibits:
+%   - Tables 2, 4, 5.  Figures 3, 4, 5, G4.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+results_baseanalysis(path)
+   
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Examines various counterfactuals:
+%   (i) Miller/Coors merger with and without efficiencies
+%   (ii) ABI/Modelo merger with no, minor, and major efficiencies
+%   (iii) Non-pooled ICCs given pooled imputation 
+%   (iv) MillerCoors as price leader
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+% Does (i), (ii), (iv) from the list above
+for scen = [1 2 6 7 8 12]
+
+    results_cfmergers(path,scen)
+    
+end
+
+% Does (iii) from the list above: multimarket contact
+results_cfmmc(path)
+
+% Associated tables and figures
+results_cfanalysis(path)
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Makes the line graph of supermarkups -> marginal cost, to illustrate
+%   identification.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+idgraph(path)
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Conducts the Monte Carlo identification check
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+cd(strcat(path.code2))
+
+start_idcheck(path)
+
+cd(path.code1)
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%
+
+    
+    
