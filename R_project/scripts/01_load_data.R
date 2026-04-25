@@ -1,4 +1,4 @@
-# ==============================================================================
+﻿# ==============================================================================
 # 01_load_data.R — Load .mat files, decode IDs, build raw tibble
 # Miller & Weinberg (2017) Replication in R
 # ==============================================================================
@@ -20,7 +20,7 @@
 #   14. Salvar dados processados em CSV e RData
 # ==============================================================================
 
-source("C:/Users/rafael.oliveira/Desktop/Problem Set/R_project/scripts/00_setup.R")
+source("C:/Users/rafael.oliveira/Desktop/Organização Industrial Empírica/Problem Set/R_project/scripts/00_setup.R")
 
 # ==== BLOCO: Carregar dados brutos do scanner ====
 # Arquivo small_scanner.mat contem 1120 observacoes (produto x mercado x mes)

@@ -1,4 +1,4 @@
-# ==============================================================================
+﻿# ==============================================================================
 # 03_demand_estimation.R — Linear 2SLS and RCNL demand estimation
 # Miller & Weinberg (2017) Replication in R
 # ==============================================================================
@@ -12,8 +12,8 @@
 # necessarias para recuperar markups e simular fusoes nos scripts seguintes.
 # ==============================================================================
 
-load("C:/Users/rafael.oliveira/Desktop/Problem Set/R_project/data/step02_output.RData")
-source("C:/Users/rafael.oliveira/Desktop/Problem Set/R_project/scripts/00_setup.R")
+load("C:/Users/rafael.oliveira/Desktop/Organização Industrial Empírica/Problem Set/R_project/data/step02_output.RData")
+source("C:/Users/rafael.oliveira/Desktop/Organização Industrial Empírica/Problem Set/R_project/scripts/00_setup.R")
 
 cat("\n")
 cat("=", rep("=", 69), "\n", sep = "")

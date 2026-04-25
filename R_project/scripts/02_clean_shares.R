@@ -1,4 +1,4 @@
-# ==============================================================================
+﻿# ==============================================================================
 # 02_clean_shares.R — Instruments, fixed effects, validation, diagnostic plots
 # Miller & Weinberg (2017) Replication in R
 # ==============================================================================
@@ -9,8 +9,8 @@
 
 # ==== BLOCO: Carregamento de dados e configuracao ====
 # Carrega os objetos do passo anterior (df, dfull, elasMat, delta, etc.)
-load("C:/Users/rafael.oliveira/Desktop/Problem Set/R_project/data/step01_output.RData")
-source("C:/Users/rafael.oliveira/Desktop/Problem Set/R_project/scripts/00_setup.R")
+load("C:/Users/rafael.oliveira/Desktop/Organização Industrial Empírica/Problem Set/R_project/data/step01_output.RData")
+source("C:/Users/rafael.oliveira/Desktop/Organização Industrial Empírica/Problem Set/R_project/scripts/00_setup.R")
 
 cat("\n")
 cat("=", rep("=", 59), "\n", sep = "")

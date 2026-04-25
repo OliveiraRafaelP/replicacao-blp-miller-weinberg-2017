@@ -1,4 +1,4 @@
-# ==============================================================================
+﻿# ==============================================================================
 # 00_setup.R — Packages, paths, and helper functions
 # Miller & Weinberg (2017) Replication in R
 # ==============================================================================
@@ -42,14 +42,14 @@ for (pkg in required_pkgs) {
 # Lista nomeada com todos os diretorios relevantes.
 # Facilita referencia cruzada entre scripts sem hardcodar caminhos repetidos.
 path <- list(
-  root     = normalizePath("C:/Users/rafael.oliveira/Desktop/Problem Set"),
-  data_raw = normalizePath("C:/Users/rafael.oliveira/Desktop/Problem Set/replication/data/raw"),
-  data_ana = normalizePath("C:/Users/rafael.oliveira/Desktop/Problem Set/replication/data/analysis"),
-  results  = normalizePath("C:/Users/rafael.oliveira/Desktop/Problem Set/replication/results"),
-  rproject = normalizePath("C:/Users/rafael.oliveira/Desktop/Problem Set/R_project"),
-  scripts  = normalizePath("C:/Users/rafael.oliveira/Desktop/Problem Set/R_project/scripts"),
-  output   = normalizePath("C:/Users/rafael.oliveira/Desktop/Problem Set/R_project/output"),
-  data_out = normalizePath("C:/Users/rafael.oliveira/Desktop/Problem Set/R_project/data")
+  root     = normalizePath("C:/Users/rafael.oliveira/Desktop/Organização Industrial Empírica/Problem Set"),
+  data_raw = normalizePath("C:/Users/rafael.oliveira/Desktop/Organização Industrial Empírica/Problem Set/replication/data/raw"),
+  data_ana = normalizePath("C:/Users/rafael.oliveira/Desktop/Organização Industrial Empírica/Problem Set/replication/data/analysis"),
+  results  = normalizePath("C:/Users/rafael.oliveira/Desktop/Organização Industrial Empírica/Problem Set/replication/results"),
+  rproject = normalizePath("C:/Users/rafael.oliveira/Desktop/Organização Industrial Empírica/Problem Set/R_project"),
+  scripts  = normalizePath("C:/Users/rafael.oliveira/Desktop/Organização Industrial Empírica/Problem Set/R_project/scripts"),
+  output   = normalizePath("C:/Users/rafael.oliveira/Desktop/Organização Industrial Empírica/Problem Set/R_project/output"),
+  data_out = normalizePath("C:/Users/rafael.oliveira/Desktop/Organização Industrial Empírica/Problem Set/R_project/data")
 )
 
 # ==== BLOCO: Constantes globais ====

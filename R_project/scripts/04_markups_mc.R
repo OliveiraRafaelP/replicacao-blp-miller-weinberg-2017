@@ -1,4 +1,4 @@
-# ==============================================================================
+﻿# ==============================================================================
 # 04_markups_mc.R — Markups, marginal costs, ownership matrices
 # Miller & Weinberg (2017) Replication in R
 # Uses RCNL parameters from dresgmm2.mat as baseline
@@ -17,8 +17,8 @@
 # e s eh o vetor de shares. O custo marginal segue como mc = p - markup.
 # ==============================================================================
 
-load("C:/Users/rafael.oliveira/Desktop/Problem Set/R_project/data/step03_output.RData")
-source("C:/Users/rafael.oliveira/Desktop/Problem Set/R_project/scripts/00_setup.R")
+load("C:/Users/rafael.oliveira/Desktop/Organização Industrial Empírica/Problem Set/R_project/data/step03_output.RData")
+source("C:/Users/rafael.oliveira/Desktop/Organização Industrial Empírica/Problem Set/R_project/scripts/00_setup.R")
 
 cat("\n")
 cat("=", rep("=", 69), "\n", sep = "")

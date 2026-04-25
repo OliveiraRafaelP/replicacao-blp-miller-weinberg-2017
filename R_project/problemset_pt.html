@@ -11,7 +11,7 @@
 
 <meta name="author" content="Rafael Oliveira" />
 
-<meta name="date" content="2026-04-01" />
+<meta name="date" content="2026-04-25" />
 
 <title>Lista de Exercícios 1: Replicação BLP</title>
 
@@ -1813,22 +1813,22 @@ border-radius: 0px;
 <h3 class="subtitle">Mercado de Cervejas – Miller &amp; Weinberg
 (2017)</h3>
 <h4 class="author">Rafael Oliveira</h4>
-<h4 class="date">2026-04-01</h4>
+<h4 class="date">2026-04-25</h4>
 
 </div>
 
 
 <blockquote>
-<p><strong>Nota métodologica.</strong> A implementação empirica deste
+<p><strong>Nota metodológica.</strong> A implementação empírica deste
 exercício foi realizada inteiramente em R, a partir do <em>replication
 package</em> original em Matlab disponibilizado por Miller &amp;
-Weinberg (2017). A amostra utilizada é uma versao reduzida é perturbada
-do conjunto de dados original do IRI: contem 5 das 37 regiões, 8 dos 39
-produtos, é os preços é quantidades foram aleatoriamente modificados
+Weinberg (2017). A amostra utilizada é uma versão reduzida e perturbada
+do conjunto de dados original do IRI: contém 5 das 37 regiões, 8 dos 39
+produtos, e os preços e quantidades foram aleatoriamente modificados
 pelos autores para fins de replicação. Consequentemente, os coeficientes
 estimados não devem reproduzir exatamente as tabelas publicadas. O
-objetivo é replicar a <em>métodologia</em> — a pipeline completa de
-estimação BLP é simulação de fusão — é não os valores numericos
+objetivo é replicar a <em>metodologia</em> — a pipeline completa de
+estimação BLP e simulação de fusão — e não os valores numéricos
 exatos.</p>
 </blockquote>
 <div id="contexto-teórico-e-pergunta-de-política" class="section level1" number="1">
@@ -1995,11 +1995,11 @@ carregados, os identificadores de produto e mercado são decodificados, e
 as participações de mercado (<em>market shares</em>) são calculadas com
 um bem externo (<em>outside good</em>) explícito.</p>
 <p><strong>Nota sobre os dados de replicação.</strong> Os dados
-utilizados neste exercício são uma versao reduzida e perturbada dos
+utilizados neste exercício são uma versão reduzida e perturbada dos
 dados originais de <em>scanner</em> do IRI empregados por Miller &amp;
 Weinberg (2017). A amostra de replicação contém 5 das 37 regiões
 originais e 8 dos 39 produtos. Preços e quantidades foram aleatoriamente
-perturbados, e os volumes da ABI é Miller Lite foram inflados por um
+perturbados, e os volumes da ABI e Miller Lite foram inflados por um
 fator de 1,5 (<code>smalldata.m</code>, linhas 31–38). Em consequência,
 os coeficientes estimados e as elasticidades não vão reproduzir os
 valores das tabelas publicadas. O objetivo deste exercício é replicar a
@@ -2013,7 +2013,7 @@ arquivos Matlab</h2>
 Os dados de <em>scanner</em> (<code>small_scanner.mat</code>) consistem
 em uma matriz <span class="math inline">\(1120 \times 9\)</span> que
 codifica identificadores de produto, preços, quantidades e
-caracteristicas de mercado. As demografias
+características de mercado. As demografias
 (<code>small_demosE.mat</code>) contém 500 sorteios simulados de renda
 por combinação ano-cidade. Os parâmetros de demanda pré-estimados
 (<code>small_dresgmm2.mat</code>) fornecem os coeficientes RCNL da
@@ -2235,7 +2235,7 @@ ln(s_j) - ln(s_0)
 </tr>
 </tbody>
 </table>
-<p>Nao há zeros nem valores extremos nesta amostra (intervalo de
+<p>Não há zeros nem valores extremos nesta amostra (intervalo de
 <em>shares</em>: [0,004; 0,120]). Todas as participações são
 estritamente positivas e bem abaixo da unidade, de modo que a
 transformação log-odds <span class="math inline">\(\ln(s_{jt}) -
@@ -2385,7 +2385,7 @@ número de produtos no mercado; Z5–Z6: interações com <em>dummies</em> de
 firma) são degenerados nesta amostra porque <span class="math inline">\(J = 8\)</span> em todos os mercados — consequência
 do dataset reduzido.</p>
 <p>Vale destacar que, ao contrário do artigo, quatro instrumentos
-baseados em renda (Z9–Z12: renda média interagida com caracteristicas do
+baseados em renda (Z9–Z12: renda média interagida com características do
 produto) foram avaliados em análise de sensibilidade, mas rejeitados:
 produzem coeficientes de preço com sinal incorreto e falham nos testes
 de sobreidentificação, consistente com a perturbação dos dados
@@ -2411,7 +2411,7 @@ para a análise do lado da oferta.</p>
 <p><span class="math display">\[\ln(s_{jt}) - \ln(s_{0t}) = \alpha \,
 p_{jt} + \sigma \ln(s_{j|g,t}) + \mathbf{x}_j&#39; \boldsymbol{\beta} +
 \xi_{jt}\]</span></p>
-<p>onde <span class="math inline">\(p_{jt}\)</span> é <span class="math inline">\(\ln(s_{j|g,t})\)</span> são endógenos,
+<p>onde <span class="math inline">\(p_{jt}\)</span> e <span class="math inline">\(\ln(s_{j|g,t})\)</span> são endógenos,
 instrumentados pelas cinco variáveis excluídas descritas acima. Efeitos
 fixos de produto e de período absorvem <span class="math inline">\(\mathbf{x}_j&#39; \boldsymbol{\beta}\)</span>.</p>
 <pre class="r"><code># Spec B: Logit simples com IV
@@ -2587,7 +2587,7 @@ confirmando a endogeneidade dos preços. Já a especificação nested logit
 1)\)</span>, satisfazendo a restrição teórica. As estatísticas <span class="math inline">\(F\)</span> do <em>first stage</em> superam o
 limiar de Staiger-Stock de 10, indicando força adequada dos
 instrumentos.</p>
-<p>As estimativas 2SLS são atenuadas em relacão ao RCNL do artigo (<span class="math inline">\(\alpha = -0{,}109\)</span>, <span class="math inline">\(\rho = 0{,}778\)</span>), como esperado dada a
+<p>As estimativas 2SLS são atenuadas em relação ao RCNL do artigo (<span class="math inline">\(\alpha = -0{,}109\)</span>, <span class="math inline">\(\rho = 0{,}778\)</span>), como esperado dada a
 especificação mais simples, a amostra menor e a perturbação dos dados.
 Os padrões qualitativos — coeficiente de preço negativo, alta correlação
 intra-<em>nest</em>, <em>first stages</em> fortes — confirmam que a
@@ -2606,7 +2606,7 @@ médio de preço)</li>
 <li><span class="math inline">\(\rho = 0{,}7779\)</span> (parametro de
 <em>nesting</em>)</li>
 <li><span class="math inline">\(\theta_2 = [0{,}0009;\; 0{,}0125;\;
-0{,}0045]\)</span> (interações de renda com preço, constante é
+0{,}0045]\)</span> (interações de renda com preço, constante e
 calorias)</li>
 </ul>
 <p>Esses parâmetros são carregados de <code>small_dresgmm2.mat</code> e
@@ -2614,7 +2614,7 @@ tomados como dados, seguindo a estrutura do próprio <em>replication
 package</em>, o qual não reestima a demanda.</p>
 <pre class="r"><code># Selecionar 80 mercados filtrados por ano fiscal dentre os 140 brutos
 library(R.matlab)
-mat_reload &lt;- readMat(&quot;C:/Users/rafael.oliveira/Desktop/Problem Set/replication/data/raw/small_scanner.mat&quot;)
+mat_reload &lt;- readMat(&quot;../replication/data/raw/small_scanner.mat&quot;)
 id2_all &lt;- mat_reload$small.scanner[, 1]
 fid_all &lt;- floor(id2_all / 1e10)
 yid_all &lt;- floor((id2_all - fid_all*1e10 - floor((id2_all - fid_all*1e10)/1e8)*1e8 -
@@ -2961,10 +2961,10 @@ regime de liderança de preços pela ABI seria mais aderente à realidade)
 <div id="dataset-pós-fusão" class="section level2" number="4.1">
 <h2><span class="header-section-number">4.1</span> Dataset
 pós-fusão</h2>
-<p>A mudanca de propriedade pós-fusão atribui à Coors Light (marca 4,
+<p>A mudança de propriedade pós-fusão atribui à Coors Light (marca 4,
 anteriormente pertencente à Coors como firma 4) a MillerCoors (firma 5),
 criando uma firma de quatro produtos que internaliza externalidades de
-precificação entre Coors Light é Miller Lite em ambos os tamanhos de
+precificação entre Coors Light e Miller Lite em ambos os tamanhos de
 embalagem.</p>
 <pre class="r"><code># Pré-fusao (mercado 1)
 m1 &lt;- 1:8
@@ -2978,7 +2978,7 @@ cat(&quot;Pares de produtos co-propriedade (pre-fusao):&quot;, sum(owner_pre[upp
 <p>O número de pares de produtos co-propriedade aumenta de 3 para 7.
 Antes da fusão, um aumento de preço na Coors Light 12pk desvia parte da
 demanda para Miller Lite 12pk — um ganho capturado por uma rival.</p>
-<p>Apos a fusão, esse desvio permanece dentro da firma, reduzindo o
+<p>Após a fusão, esse desvio permanece dentro da firma, reduzindo o
 custo competitivo do aumento de preço. Ou seja, esta é a eficiência
 gerada pela fusão.</p>
 </div>
@@ -3213,13 +3213,13 @@ good</em>.</p>
 <p><strong>Implicações para política antitruste.</strong> Sob o modelo
 de Bertrand, a razão entre o aumento de preço da ABI e o das partes
 fusionadas é de aproximadamente 0,33. Nos dados observados, contudo,
-essa razão é proxima de 1,0 — os preços da ABI subiram quase tanto
+essa razão é próxima de 1,0 — os preços da ABI subiram quase tanto
 quanto os da Miller/Coors após a <em>joint venture</em>.</p>
-<p>Novamente, essa discrepância entre a previsão de Bertrand e o padrao
+<p>Novamente, essa discrepância entre a previsão de Bertrand e o padrão
 de preços observado é que constitui a evidência central para a hipótese
 de coordenação.</p>
-<p><strong>Lideranca de preços vs. Bertrand.</strong> Miller &amp;
-Weinberg (2017) argumentam que um modelo de lideranca de preços fornece
+<p><strong>Liderança de preços vs. Bertrand.</strong> Miller &amp;
+Weinberg (2017) argumentam que um modelo de liderança de preços fornece
 uma descrição estrutural mais adequada da conduta pós-fusão por três
 razões:</p>
 <ol style="list-style-type: lower-roman">
@@ -3242,13 +3242,13 @@ Marginal de 5%</h1>
 <p>Esta seção discute qualitativamente as implicações de uma redução de
 5% nos custos marginais da entidade fusionada, conforme solicitado no
 enunciado.</p>
-<p>Nesse cenário, a simulação procede de forma identica à seção
+<p>Nesse cenário, a simulação procede de forma idêntica à seção
 anterior, mas com <span class="math inline">\(mc_j^{\text{eff}} = 0{,}95
 \times mc_j\)</span> para todos os produtos da MillerCoors. A eficiência
 reduz o incentivo da firma fusionada a elevar preços, compensando
 parcialmente o efeito unilateral.</p>
 <p>A aprovação da fusão sob um critério de bem-estar do consumidor
-depende do sinal do impacto liquido <span class="math inline">\(\Delta
+depende do sinal do impacto líquido <span class="math inline">\(\Delta
 CS_{\text{fusão}} + \Delta CS_{\text{eficiência}}\)</span>.</p>
 <p>Dado que o aumento de preço de Bertrand para as partes fusionadas é
 modesto (+1,9%, aproximadamente US$0,20), uma redução de 5% nos custos
@@ -3266,17 +3266,17 @@ várias vezes superiores ao <em>baseline</em> de Bertrand.</p>
 <div id="tabelas-replicadas" class="section level2" number="6.1">
 <h2><span class="header-section-number">6.1</span> Tabelas
 replicadas</h2>
-<p>Este exercício replica os componentes centrais do pipeline empirica
+<p>Este exercício replica os componentes centrais do pipeline empírica
 de MW (2017): construção dos dados a partir do <em>replication
 package</em> em Matlab, estimação de demanda via nested logit 2SLS,
 recuperação de custos marginais por inversão das condições de primeira
-ordem utilizando os parametros RCNL do artigo, e simulação de fusão sob
-Bertrand com calculo de bem-estar.</p>
+ordem utilizando os parâmetros RCNL do artigo, e simulação de fusão sob
+Bertrand com cálculo de bem-estar.</p>
 <p>Os padrões de elasticidade (média própria <span class="math inline">\(\approx -4{,}7\)</span>, elasticidades cruzadas
 diferenciadas) e as estimativas de markup (índice de Lerner <span class="math inline">\(\approx 29\%\)</span>) são consistentes com os
 resultados do artigo. A simulação de fusão produz aumentos de preço na
 direção correta (+1,9% para as partes fusionadas, +0,5% para a ABI) e um
-declinio modesto do excedente do consumidor (<span class="math inline">\(-0{,}9\%\)</span>).</p>
+declínio modesto do excedente do consumidor (<span class="math inline">\(-0{,}9\%\)</span>).</p>
 </div>
 <div id="desafios-associados-à-base-de-dados" class="section level2" number="6.2">
 <h2><span class="header-section-number">6.2</span> Desafios associados à
@@ -3296,7 +3296,7 @@ razoabilidade dos instrumentos, mas a variação captada não possui
 intuição econômica. Em razão disso, optou-se na replicação por excluir
 da estimação em 2SLS esses instrumentos associados à renda após análise
 de sensibilidade; e</p></li>
-<li><p>o teste de Sargan rejeita a válidade dos instrumentos em
+<li><p>o teste de Sargan rejeita a validade dos instrumentos em
 especificações sobreidentificadas, resultado atribuível à perturbação e
 não a uma falha fundamental de identificação. O modelo RCNL completo com
 coeficientes aleatórios não pode ser estimado de forma crível com apenas
@@ -3309,7 +3309,7 @@ nas estimativas 2SLS.</p></li>
 <h2><span class="header-section-number">6.3</span> Lições de Organização
 Industrial</h2>
 <p>Este exercício demonstra o <em>toolkit</em> padrão de IO estrutural
-para análise de fusoes:</p>
+para análise de fusões:</p>
 <ol style="list-style-type: decimal">
 <li><p>estimação de demanda com instrumentos para endogeneidade de
 preços (além de resolver a endogeneidade dos shares
@@ -3318,12 +3318,12 @@ condicionais);</p></li>
 as condições de primeira ordem de um jogo de precificação
 multi-produto;</p></li>
 <li><p>simulação contrafactual sob estruturas alternativas de
-propriedade. A principal contribuicao de Miller &amp; Weinberg (2017) é
+propriedade. A principal contribuição de Miller &amp; Weinberg (2017) é
 mostrar que a simulação padrão de fusão sob Bertrand <em>subestima</em>
 os efeitos observados sobre preços da <em>joint venture</em>
 MillerCoors. A diferença entre a previsão de Bertrand e os dados é
-atribuida à coordenação tácita de preços, quantificada por meio de um
-modelo de Equilíbrio de Lideranca de Preços (PLE) com restrições de
+atribuída à coordenação tácita de preços, quantificada por meio de um
+modelo de Equilíbrio de Liderança de Preços (PLE) com restrições de
 compatibilidade de incentivos.</p></li>
 </ol>
 <p>Essa conclusão tem implicações diretas para a política antitruste:
@@ -3338,7 +3338,7 @@ antitruste).</p>
 <div id="apêndice-códigos-principais" class="section level1" number="7">
 <h1><span class="header-section-number">7</span> Apêndice: Códigos
 Principais</h1>
-<p>Este apendice apresenta os trechos centrais do codigo R utilizado na
+<p>Este apêndice apresenta os trechos centrais do código R utilizado na
 replicação. Os scripts completos estão na pasta <code>scripts/</code> do
 projeto. Aqui são reproduzidos apenas os passos-chave de cada etapa do
 pipeline.</p>

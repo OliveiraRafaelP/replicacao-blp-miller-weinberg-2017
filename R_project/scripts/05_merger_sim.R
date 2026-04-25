@@ -1,4 +1,4 @@
-# ==============================================================================
+﻿# ==============================================================================
 # 05_merger_sim.R — Bertrand merger simulation (MillerCoors JV)
 # Miller & Weinberg (2017) Replication in R
 # ==============================================================================
@@ -16,8 +16,8 @@
 # mudam com a fusao — apenas a estrutura de propriedade muda.
 # ==============================================================================
 
-load("C:/Users/rafael.oliveira/Desktop/Problem Set/R_project/data/step04_output.RData")
-source("C:/Users/rafael.oliveira/Desktop/Problem Set/R_project/scripts/00_setup.R")
+load("C:/Users/rafael.oliveira/Desktop/Organização Industrial Empírica/Problem Set/R_project/data/step04_output.RData")
+source("C:/Users/rafael.oliveira/Desktop/Organização Industrial Empírica/Problem Set/R_project/scripts/00_setup.R")
 
 cat("\n")
 cat("=", rep("=", 69), "\n", sep = "")

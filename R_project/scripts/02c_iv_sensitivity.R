@@ -1,4 +1,4 @@
-# ==============================================================================
+﻿# ==============================================================================
 # 02c_iv_sensitivity.R — IV sensitivity: baseline vs full instrument set
 # Miller & Weinberg (2017) Replication in R
 # ==============================================================================
@@ -9,8 +9,8 @@
 # Objetivo: verificar se os coeficientes estruturais sao estaveis.
 # ==============================================================================
 
-load("C:/Users/rafael.oliveira/Desktop/Problem Set/R_project/data/step02_output.RData")
-source("C:/Users/rafael.oliveira/Desktop/Problem Set/R_project/scripts/00_setup.R")
+load("C:/Users/rafael.oliveira/Desktop/Organização Industrial Empírica/Problem Set/R_project/data/step02_output.RData")
+source("C:/Users/rafael.oliveira/Desktop/Organização Industrial Empírica/Problem Set/R_project/scripts/00_setup.R")
 
 cat("\n")
 cat("=", rep("=", 69), "\n", sep = "")
